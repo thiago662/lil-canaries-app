@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "emulators": "firebase emulators:start --project demo-canarinhos",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-rules-test \"node --test tests/rules/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-rules-test \"node --test tests/rules/*.test.mjs\"",
+    "seed": "node scripts/seed-emulator.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.0",

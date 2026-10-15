@@ -1,5 +1,9 @@
 <header class="topo">
   <a routerLink="/" class="marca">🐤 Canarinhos Pistola</a>
+  @if (auth.perfil(); as p) {
+    <span class="quem">{{ p.avatar }} {{ p.nome }}</span>
+    <button class="sair" (click)="sair()">Sair</button>
+  }
 </header>
 <main class="conteudo">
   <router-outlet />

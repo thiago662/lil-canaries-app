@@ -15,6 +15,17 @@ npm start           # http://localhost:4200
 
 Com `useEmulators = true` o app usa um projeto `demo-*` e nunca toca em produção.
 
+Com o emulador de pé, `npm run seed` cria 2 canarinhos de teste (`thiago@teste.local` e `igor@teste.local`, senha `password123`) e alguns checkpoints pro Thiago. O emulador perde os dados ao reiniciar: é só rodar o seed de novo.
+
+## Convidar um canarinho (produção)
+
+Só entra quem tem perfil no Firestore, e o cliente nunca cria perfil (as rules negam). Pra cada pessoa nova, no Console do Firebase:
+
+1. **Authentication > Usuários > Adicionar usuário** (e-mail e senha). Copie o **UID**.
+2. **Firestore Database > Iniciar coleção** `canarinhos` (ou **Adicionar documento** se já existir), com **ID do documento = o UID** e os campos de texto `nome` (ex.: `Thiago`), `apelido` (vazio) e `avatar` (ex.: `🐤`).
+
+Quem tem conta no Auth mas não tem esse documento vê "Essa conta ainda não foi convidada pro ninho".
+
 ## Comandos
 
 - `npm start`: dev server

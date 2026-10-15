@@ -2,9 +2,60 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Fase 0: tudo negado. As rules de verdade chegam com o login (fase 1).
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Estar logado nunca basta: o Auth deixa qualquer um criar conta via API. Só entra quem tem
+    // perfil em canarinhos/{uid}, e perfil só é criado pelo dono do projeto (console/seed), nunca
+    // pelo cliente (ver `allow create` ausente abaixo).
+    function isCanarinho() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/canarinhos/$(request.auth.uid));
+    }
+
+    function isDono(uid) {
+      return isCanarinho() && request.auth.uid == uid;
+    }
+
+    function validPerfil(d) {
+      return d.keys().hasOnly(['nome', 'apelido', 'avatar'])
+        && d.nome is string && d.nome.size() > 0 && d.nome.size() <= 40
+        && d.apelido is string && d.apelido.size() <= 30
+        && d.avatar is string && d.avatar.size() > 0 && d.avatar.size() <= 10;
+    }
+
+    // mesmas faixas de TIPOS em src/app/core/medidas.ts, mantidas em sincronia à mão
+    function validValor(tipo, v) {
+      return v is number && (
+        (tipo == 'peso' && v >= 20 && v <= 400)
+        || (tipo == 'altura' && v >= 100 && v <= 250)
+        || (tipo == 'salario' && v >= 0 && v <= 10000000)
+        || (tipo == 'peca' && v >= 0 && v <= 100)
+      );
+    }
+
+    // O id é `${tipo}_${data}`: um checkpoint por tipo e dia, e tipo/data nunca mudam num update.
+    function validMedida(id, d) {
+      return d.keys().hasOnly(['tipo', 'data', 'valor'])
+        && d.keys().hasAll(['tipo', 'data', 'valor'])
+        && d.tipo is string
+        && d.data is string
+        && d.data.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && id == d.tipo + '_' + d.data
+        && validValor(d.tipo, d.valor);
+    }
+
+    match /canarinhos/{uid} {
+      allow read: if isCanarinho();
+      allow update: if isDono(uid) && validPerfil(request.resource.data);
+
+      match /medidas/{id} {
+        allow read: if isCanarinho();
+        allow create, update: if isDono(uid) && validMedida(id, request.resource.data);
+        allow delete: if isDono(uid);
+      }
     }
   }
 }
