@@ -53,7 +53,7 @@ const ERROS: Record<string, string> = {
   `,
   styles: `
     .login { max-width: 24rem; margin: 1rem auto; }
-    .mascote { width: 8rem; margin: 0 auto 0.75rem; }
+    .mascote { width: 10rem; margin: 0 auto 0.75rem; }
     h1 { text-align: center; }
     .btn { width: 100%; }
     .erro {
