@@ -128,8 +128,50 @@ describe('medidas', () => {
     await assertFails(setDoc(ref('thiago', 'peso_2026-13-40'), { ...medida, data: '2026-13-40' }));
     await assertFails(setDoc(ref('thiago', 'peso_2026-10-15'), { ...medida, extra: 1 }));
     await assertFails(setDoc(ref('thiago', 'peso_2026-10-15'), { tipo: 'peso', data: '2026-10-15' }));
-    await assertSucceeds(setDoc(ref('thiago', 'apelidos_2026-10-15'), { tipo: 'apelidos', data: '2026-10-15', valor: 21 }));
-    await assertFails(setDoc(ref('thiago', 'apelidos_2026-10-16'), { tipo: 'apelidos', data: '2026-10-16', valor: -3 }));
+    await assertFails(setDoc(ref('thiago', 'apelidos_2026-10-15'), { tipo: 'apelidos', data: '2026-10-15', valor: 21 }));
     await assertFails(setDoc(ref('thiago', 'ouro_2026-10-15'), { tipo: 'ouro', data: '2026-10-15', valor: 1 }));
+  });
+});
+
+describe('apelidos com M', () => {
+  const novo = (uid, extra = {}) => ({ texto: 'Marmelo', data: '2026-10-15', autorUid: uid, ...extra });
+  const ref = (uid, id) => doc(como(uid), `apelidos/${id}`);
+
+  it('canarinho lança e todo canarinho lê; sem perfil não lê nem lança', async () => {
+    await assertSucceeds(setDoc(ref('thiago', 'marmelo'), novo('thiago')));
+    await assertSucceeds(getDoc(ref('igor', 'marmelo')));
+    await assertFails(getDoc(ref('intruso', 'marmelo')));
+    await assertFails(setDoc(ref('intruso', 'martelo'), novo('intruso', { texto: 'Martelo' })));
+  });
+
+  it('o mesmo apelido não pode ser lançado de novo nem sobrescrito', async () => {
+    await assertSucceeds(setDoc(ref('thiago', 'marmelo'), novo('thiago')));
+    await assertFails(setDoc(ref('igor', 'marmelo'), novo('igor')));
+    await assertFails(setDoc(ref('thiago', 'marmelo'), novo('thiago', { data: '2026-10-16' })));
+  });
+
+  it('autor tem que ser quem lança', async () => {
+    await assertFails(setDoc(ref('igor', 'marmelo'), novo('thiago')));
+  });
+
+  it('tem que começar com M e o id tem que ser o texto normalizado', async () => {
+    await assertFails(setDoc(ref('thiago', 'banana'), novo('thiago', { texto: 'Banana' })));
+    await assertFails(setDoc(ref('thiago', 'Marmelo'), novo('thiago'))); // id com maiúscula
+    await assertFails(setDoc(ref('thiago', 'mármore'), novo('thiago', { texto: 'Mármore' }))); // id com acento
+    await assertFails(setDoc(ref('thiago', 'm'), novo('thiago', { texto: 'M' }))); // curto demais
+    await assertSucceeds(setDoc(ref('thiago', 'mandragora'), novo('thiago', { texto: 'Mandrágora' })));
+  });
+
+  it('data inválida ou campo extra são negados', async () => {
+    await assertFails(setDoc(ref('thiago', 'marmelo'), novo('thiago', { data: '15/10/2026' })));
+    await assertFails(setDoc(ref('thiago', 'marmelo'), novo('thiago', { extra: 1 })));
+  });
+
+  it('só o autor apaga', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'apelidos/marmelo'), novo('thiago')),
+    );
+    await assertFails(deleteDoc(ref('igor', 'marmelo')));
+    await assertSucceeds(deleteDoc(ref('thiago', 'marmelo')));
   });
 });

@@ -7,16 +7,17 @@ import {
   CATEGORIAS,
   dataBr,
   formatar,
+  formatarApelidos,
   formatarCategoria,
   formatarImc,
   imcAtual,
   ORDEM_CATEGORIAS,
   ORDEM_TIPOS,
-  serieDe,
   TIPOS,
   valorAtual,
 } from '../core/medidas';
 import { Ninho } from '../core/ninho';
+import { serieCanarinho } from '../core/placar';
 import { Grafico, Serie } from '../shared/grafico';
 import { Checkpoints } from './checkpoints';
 
@@ -166,11 +167,19 @@ export class Ficha {
   protected readonly avatar = signal(AVATARES[0]);
   protected readonly graficoCat = signal<Categoria>('peso');
 
+  /** Série de uma categoria deste canarinho (apelidos só têm pontos pro Marco). */
+  private serieDe(cat: Categoria) {
+    const perfil = this.perfil();
+    return perfil
+      ? serieCanarinho({ uid: this.uid(), perfil }, this.medidas(), cat, this.ninho.apelidos())
+      : [];
+  }
+
   protected readonly serie = computed<Serie[]>(() => [
     {
       nome: this.info[this.graficoCat()].rotulo,
       cor: '#1d4fa3',
-      pontos: serieDe(this.medidas(), this.graficoCat()),
+      pontos: this.serieDe(this.graficoCat()),
     },
   ]);
 
@@ -180,15 +189,21 @@ export class Ficha {
     const medidas = this.medidas();
     const linhas = ORDEM_TIPOS.map((tipo) => {
       const atual = valorAtual(medidas, tipo);
-      const padrao = TIPOS[tipo].padrao;
       return {
         rotulo: TIPOS[tipo].rotulo,
         emoji: TIPOS[tipo].emoji,
-        valor: atual ? formatar(tipo, atual.valor) : padrao ? formatar(tipo, padrao.valor) : '—',
-        desde: atual ? `em ${dataBr(atual.data)}` : (padrao?.legenda ?? 'sem dados'),
+        valor: atual ? formatar(tipo, atual.valor) : '—',
+        desde: atual ? `em ${dataBr(atual.data)}` : 'sem dados',
       };
     });
     const imc = imcAtual(medidas);
+    const apelidos = this.serieDe('apelidos').at(-1);
+    linhas.push({
+      rotulo: this.info.apelidos.rotulo,
+      emoji: this.info.apelidos.emoji,
+      valor: formatarApelidos(apelidos?.valor ?? 0),
+      desde: apelidos ? `desde ${dataBr(this.serieDe('apelidos')[0].data)}` : 'ficha limpa',
+    });
     // IMC entra logo depois da altura
     linhas.splice(2, 0, {
       rotulo: 'IMC',

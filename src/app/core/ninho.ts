@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { collection, collectionGroup, onSnapshot } from 'firebase/firestore';
 import { AuthService, Perfil } from './auth.service';
 import { db } from './firebase';
+import { Apelido } from './apelidos';
 import { Medida } from './medidas';
 
 export interface Canarinho {
@@ -17,6 +18,7 @@ export class Ninho {
   private readonly auth = inject(AuthService);
 
   readonly canarinhos = signal<Canarinho[]>([]);
+  readonly apelidos = signal<Apelido[]>([]);
   readonly pronto = signal(false);
   readonly erro = signal(false);
   private readonly todas = signal<(Medida & { uid: string })[]>([]);
@@ -37,7 +39,8 @@ export class Ninho {
       if (!logado()) return;
       let perfis = false;
       let medidas = false;
-      const chegou = () => this.pronto.set(perfis && medidas);
+      let apelidos = false;
+      const chegou = () => this.pronto.set(perfis && medidas && apelidos);
       const falhou = (e: Error) => {
         console.error(e);
         this.erro.set(true);
@@ -72,11 +75,23 @@ export class Ninho {
           },
           falhou,
         ),
+        onSnapshot(
+          collection(db, 'apelidos'),
+          (snap) => {
+            this.apelidos.set(
+              snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Apelido, 'id'>) })),
+            );
+            apelidos = true;
+            chegou();
+          },
+          falhou,
+        ),
       ];
 
       onCleanup(() => {
         parar.forEach((p) => p());
         this.canarinhos.set([]);
+        this.apelidos.set([]);
         this.todas.set([]);
         this.pronto.set(false);
         this.erro.set(false);

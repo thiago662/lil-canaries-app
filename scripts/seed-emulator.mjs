@@ -25,12 +25,32 @@ const usuarios = [
     avatar: '🐔',
     checkpoints: [
       ['peso', '2026-10-15', 107],
-      ['apelidos', '2026-06-01', 5],
-      ['apelidos', '2026-08-01', 12],
-      ['apelidos', '2026-10-01', 21],
     ],
   },
 ];
+
+// Apelidos com M pro Marco: [texto, data, autor (índice em `usuarios`)], em datas espalhadas.
+const apelidos = [
+  ['Marcelo', '2026-01-12', 0],
+  ['Martelo', '2026-02-03', 1],
+  ['Marmelo', '2026-02-20', 0],
+  ['Marlon', '2026-03-14', 2],
+  ['Maicon', '2026-04-02', 1],
+  ['Malaquias', '2026-04-27', 0],
+  ['Melancia', '2026-05-19', 1],
+  ['Mortadela', '2026-06-08', 2],
+  ['Mastodonte', '2026-06-30', 0],
+  ['Mandrágora', '2026-07-15', 1],
+  ['Macarrão', '2026-08-01', 0],
+  ['Marsupial', '2026-08-22', 2],
+  ['Mefistófeles', '2026-09-05', 1],
+  ['Muriçoca', '2026-09-18', 0],
+  ['Matusalém', '2026-10-01', 1],
+  ['Mamute', '2026-10-09', 0],
+];
+
+// mesma regra de src/app/core/apelidos.ts (normalizar)
+const normalizar = (t) => t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 async function criarConta(email) {
   const corpo = { email, password: 'password123', returnSecureToken: true };
@@ -61,11 +81,18 @@ async function gravar(caminho, campos) {
   if (!r.ok) throw new Error(`${caminho}: ${r.status} ${await r.text()}`);
 }
 
+const uids = [];
 for (const u of usuarios) {
   const uid = await criarConta(u.email);
+  uids.push(uid);
   await gravar(`canarinhos/${uid}`, { nome: u.nome, apelido: '', avatar: u.avatar });
   for (const [tipo, data, valor] of u.checkpoints) {
     await gravar(`canarinhos/${uid}/medidas/${tipo}_${data}`, { tipo, data, valor });
   }
   console.log(`${u.nome}: ${u.email} / password123 (uid ${uid})`);
 }
+
+for (const [texto, data, autor] of apelidos) {
+  await gravar(`apelidos/${normalizar(texto)}`, { texto, data, autorUid: uids[autor] });
+}
+console.log(`${apelidos.length} apelidos com M lançados`);

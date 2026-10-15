@@ -68,9 +68,6 @@ describe('medidas', () => {
     expect(validar('peso', 5, '2026-10-15')).toContain('entre');
     expect(validar('peso', 80, '15/10/2026')).toBe('Data inválida.');
     expect(validar('altura', NaN, '2026-10-15')).toBe('Valor inválido.');
-    expect(validar('apelidos', 3, '2026-10-15')).toBeNull();
-    expect(validar('apelidos', 2.5, '2026-10-15')).toContain('inteiro');
-    expect(validar('apelidos', -1, '2026-10-15')).toContain('entre');
   });
 
   it('formata em pt-BR', () => {

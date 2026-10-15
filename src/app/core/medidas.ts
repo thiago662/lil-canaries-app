@@ -1,4 +1,4 @@
-export type TipoMedida = 'peso' | 'altura' | 'salario' | 'peca' | 'apelidos';
+export type TipoMedida = 'peso' | 'altura' | 'salario' | 'peca';
 
 // Um checkpoint: o valor de um tipo numa data. O id é `${tipo}_${data}`, então só existe um por
 // tipo e dia (guardar de novo no mesmo dia corrige o valor sem mexer no resto da linha do tempo).
@@ -16,10 +16,6 @@ interface InfoTipo {
   min: number;
   max: number;
   passo: number;
-  /** Só números inteiros (contagens). */
-  inteiro?: boolean;
-  /** Valor de quem nunca lançou: em vez de "sem dados", conta como isso (a piada do contador). */
-  padrao?: { valor: number; legenda: string };
 }
 
 // Faixas espelhadas à mão em firestore.rules (validValor).
@@ -28,16 +24,6 @@ export const TIPOS: Record<TipoMedida, InfoTipo> = {
   altura: { rotulo: 'Altura', emoji: '📏', unidade: 'cm', min: 100, max: 250, passo: 1 },
   salario: { rotulo: 'Salário', emoji: '💰', unidade: 'R$/mês', min: 0, max: 10_000_000, passo: 0.01 },
   peca: { rotulo: 'Tamanho da peça', emoji: '🍆', unidade: 'cm', min: 0, max: 100, passo: 0.1 },
-  apelidos: {
-    rotulo: 'Apelidos pro Marco',
-    emoji: 'Ⓜ️',
-    unidade: 'nomes com M',
-    min: 0,
-    max: 100_000,
-    passo: 1,
-    inteiro: true,
-    padrao: { valor: 0, legenda: 'ficha limpa' },
-  },
 };
 
 export const ORDEM_TIPOS = Object.keys(TIPOS) as TipoMedida[];
@@ -92,28 +78,32 @@ export function serieImc(medidas: Medida[]): Ponto[] {
 
 export const imcAtual = (medidas: Medida[]): number | undefined => serieImc(medidas).at(-1)?.valor;
 
-// O que dá pra ranquear e plotar: os 4 tipos mais o IMC (derivado).
-export type Categoria = TipoMedida | 'imc';
+// O que dá pra ranquear e plotar: os 4 tipos, mais o IMC e os apelidos (derivados, não são checkpoints).
+export type Categoria = TipoMedida | 'imc' | 'apelidos';
 
-export const CATEGORIAS: Record<Categoria, { rotulo: string; emoji: string }> = {
+export const CATEGORIAS: Record<
+  Categoria,
+  { rotulo: string; emoji: string; padrao?: { valor: number; legenda: string } }
+> = {
   peso: TIPOS.peso,
   imc: { rotulo: 'IMC', emoji: '🧮' },
   altura: TIPOS.altura,
   salario: TIPOS.salario,
   peca: TIPOS.peca,
-  apelidos: TIPOS.apelidos,
+  // quem não é o Marco fica no zero: nunca "sem dados"
+  apelidos: { rotulo: 'Apelidos com M', emoji: 'Ⓜ️', padrao: { valor: 0, legenda: 'ficha limpa' } },
 };
 
 export const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS) as Categoria[];
 
-export const serieDe = (medidas: Medida[], cat: Categoria): Ponto[] =>
+/** Série das categorias que vêm dos checkpoints do próprio canarinho (todas menos os apelidos). */
+export const serieDe = (medidas: Medida[], cat: Exclude<Categoria, 'apelidos'>): Ponto[] =>
   cat === 'imc' ? serieImc(medidas) : serie(medidas, cat);
 
 export function validar(tipo: TipoMedida, valor: number, data: string): string | null {
   const t = TIPOS[tipo];
   if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(data)) return 'Data inválida.';
   if (!Number.isFinite(valor)) return 'Valor inválido.';
-  if (t.inteiro && !Number.isInteger(valor)) return `${t.rotulo} tem que ser um número inteiro.`;
   if (valor < t.min || valor > t.max) {
     return `${t.rotulo} tem que ficar entre ${t.min} e ${t.max} ${t.unidade}.`;
   }
@@ -130,10 +120,16 @@ export function formatar(tipo: TipoMedida, valor: number): string {
 export const formatarImc = (v: number) =>
   new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(v);
 
-export const formatarCategoria = (cat: Categoria, valor: number) =>
-  cat === 'imc' ? formatarImc(valor) : formatar(cat, valor);
+export const formatarApelidos = (n: number) => `${n} ${n === 1 ? 'nome' : 'nomes'} com M`;
 
-export const dataBr =(data: string) => data.split('-').reverse().join('/');
+export const formatarCategoria = (cat: Categoria, valor: number) =>
+  cat === 'imc'
+    ? formatarImc(valor)
+    : cat === 'apelidos'
+      ? formatarApelidos(valor)
+      : formatar(cat, valor);
+
+export const dataBr = (data: string) => data.split('-').reverse().join('/');
 
 export function hoje(): string {
   const d = new Date();

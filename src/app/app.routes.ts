@@ -12,6 +12,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', loadComponent: () => import('./placar/placar').then((m) => m.Placar) },
+      { path: 'apelidos', loadComponent: () => import('./apelidos/apelidos').then((m) => m.Apelidos) },
       {
         path: 'canarinho/:uid',
         loadComponent: () => import('./ficha/ficha').then((m) => m.Ficha),

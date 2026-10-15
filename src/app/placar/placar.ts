@@ -5,10 +5,9 @@ import {
   CATEGORIAS,
   formatarCategoria,
   ORDEM_CATEGORIAS,
-  serieDe,
 } from '../core/medidas';
 import { Ninho } from '../core/ninho';
-import { ranking } from '../core/placar';
+import { ranking, serieCanarinho } from '../core/placar';
 import { Grafico, PALETA, Serie } from '../shared/grafico';
 
 const MEDALHAS = ['🥇', '🥈', '🥉'];
@@ -137,14 +136,25 @@ export class Placar {
   protected readonly crescente = signal(false);
 
   protected readonly ranque = computed(() =>
-    ranking(this.ninho.canarinhos(), this.ninho.medidasPorUid(), this.cat(), this.crescente()),
+    ranking(
+      this.ninho.canarinhos(),
+      this.ninho.medidasPorUid(),
+      this.cat(),
+      this.crescente(),
+      this.ninho.apelidos(),
+    ),
   );
 
   protected readonly series = computed<Serie[]>(() =>
     this.ninho.canarinhos().map((c, i) => ({
       nome: `${c.perfil.avatar} ${c.perfil.nome}`,
       cor: PALETA[i % PALETA.length],
-      pontos: serieDe(this.ninho.medidasPorUid().get(c.uid) ?? [], this.cat()),
+      pontos: serieCanarinho(
+        c,
+        this.ninho.medidasPorUid().get(c.uid) ?? [],
+        this.cat(),
+        this.ninho.apelidos(),
+      ),
     })),
   );
 

@@ -5,6 +5,9 @@
       <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">
         <span aria-hidden="true">🏆</span> Placar
       </a>
+      <a routerLink="/apelidos" routerLinkActive="ativo">
+        <span aria-hidden="true">Ⓜ️</span> Apelidos
+      </a>
       <a [routerLink]="['/canarinho', auth.usuario()?.uid]" routerLinkActive="ativo">
         <span aria-hidden="true">{{ p.avatar }}</span> Minha ficha
       </a>

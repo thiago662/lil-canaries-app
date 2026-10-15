@@ -1,3 +1,4 @@
+import type { Apelido } from './apelidos';
 import { idMedida, Medida } from './medidas';
 import type { Canarinho } from './ninho';
 import { ranking } from './placar';
@@ -36,17 +37,21 @@ describe('ranking', () => {
     expect(com.find((l) => l.canarinho.uid === 'b')?.variacao).toBeUndefined();
   });
 
-  it('apelidos: quem nunca lançou conta como 0, só o Marco sai do zero', () => {
-    const p = new Map<string, Medida[]>([['b', [m('apelidos', '2026-10-01', 21)]]]);
-    const { com, sem } = ranking(canarinhos, p, 'apelidos');
+  it('apelidos: só o Marco pontua (com a quantidade), o resto fica em 0', () => {
+    const gente = [c('a', 'Ana'), c('m', 'Marco'), c('d', 'Davi')];
+    const apelidos: Apelido[] = [
+      { id: 'marmelo', texto: 'Marmelo', data: '2026-02-01', autorUid: 'a' },
+      { id: 'martelo', texto: 'Martelo', data: '2026-03-01', autorUid: 'd' },
+      { id: 'melancia', texto: 'Melancia', data: '2026-03-01', autorUid: 'a' },
+    ];
+    const { com, sem } = ranking(gente, new Map(), 'apelidos', false, apelidos);
     expect(sem).toHaveLength(0);
     expect(com.map((l) => [l.canarinho.perfil.nome, l.valor])).toEqual([
-      ['Bia', 21],
+      ['Marco', 3],
       ['Ana', 0],
-      ['Caio', 0],
       ['Davi', 0],
     ]);
-    expect(com[0].legenda).toBeUndefined();
+    expect(com[0].variacao).toBe(2); // 1 em fevereiro, 3 em março
     expect(com[1].legenda).toBe('ficha limpa');
   });
 
