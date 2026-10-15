@@ -1,5 +1,7 @@
 <header class="topo">
-  <a routerLink="/" class="marca">🐤 Canarinhos Pistola</a>
+  <a routerLink="/" class="marca">
+    <app-mascote class="logo" [rosto]="true" /> Canarinhos Pistola
+  </a>
   @if (auth.perfil(); as p) {
     <nav class="nav" aria-label="Principal">
       <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">

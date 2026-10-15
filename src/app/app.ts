@@ -2,9 +2,10 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { Ninho } from './core/ninho';
+import { Mascote } from './shared/mascote';
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Mascote],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',

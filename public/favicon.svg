@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 8 212 206">
+  <defs>
+    <radialGradient id="g" gradientUnits="userSpaceOnUse" cx="92" cy="66" r="170">
+      <stop offset="0" stop-color="#ffcb2b"/>
+      <stop offset="0.65" stop-color="#f7b500"/>
+      <stop offset="1" stop-color="#df9700"/>
+    </radialGradient>
+    <path id="h" d="M28 128C22 86 44 54 78 44c18-6 34 0 42 10 8-10 24-16 42-10 34 10 56 42 50 84-4 48-44 78-92 78S32 176 28 128z"/>
+    <clipPath id="c"><use href="#h"/></clipPath>
+  </defs>
+  <path d="M106 54C96 36 102 16 122 14c-6 10-2 22 6 40z" fill="#f5b800" stroke="#2b1a06" stroke-width="7" stroke-linejoin="round"/>
+  <use href="#h" fill="url(#g)"/>
+  <ellipse cx="72" cy="122" rx="27" ry="25" fill="#fff" stroke="#2b1a06" stroke-width="6"/>
+  <ellipse cx="168" cy="122" rx="27" ry="25" fill="#fff" stroke="#2b1a06" stroke-width="6"/>
+  <circle cx="82" cy="126" r="14" fill="#2b1206"/>
+  <circle cx="158" cy="126" r="14" fill="#2b1206"/>
+  <g clip-path="url(#c)">
+    <path d="M30 88Q74 92 116 124L122 56 24 56zM210 88Q166 92 124 124L118 56 216 56z" fill="url(#g)"/>
+  </g>
+  <path d="M32 88Q74 92 116 124M208 88Q166 92 124 124" fill="none" stroke="#2b1a06" stroke-width="10" stroke-linecap="round"/>
+  <use href="#h" fill="none" stroke="#2b1a06" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M76 144C84 126 156 126 164 144 166 164 146 188 120 201 94 188 74 164 76 144z" fill="#ff7a1f" stroke="#2b1a06" stroke-width="8" stroke-linejoin="round"/>
+</svg>
