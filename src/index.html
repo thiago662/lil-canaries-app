@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Canarinhos Pistola App</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1d4fa3">
+  <!--
+    CSP: sem scripts inline/eval. Fontes self-hosted (@fontsource).
+    connect-src: APIs do Firebase + emulador local (127.0.0.1) + websocket do ng serve.
+    style 'unsafe-inline': Angular injeta <style> dos componentes em runtime.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data:;
+    font-src 'self' data:;
+    connect-src 'self' https://*.googleapis.com http://127.0.0.1:9099 http://127.0.0.1:8080 ws://localhost:*;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self'
+  ">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

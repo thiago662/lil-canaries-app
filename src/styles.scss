@@ -1,0 +1,103 @@
+:root {
+  --amarelo: #ffd21f;
+  --amarelo-escuro: #f5b800;
+  --azul: #1d4fa3;
+  --azul-escuro: #0f2c5f;
+  --verde: #009c3b;
+  --laranja: #f26b21;
+  --vermelho: #d62828;
+  --tinta: #1b1b2f;
+  --papel: #fff8dc;
+  --branco: #fff;
+  --fonte-titulo: 'Bangers', system-ui, sans-serif;
+  --fonte-texto: 'Nunito', system-ui, sans-serif;
+  --gutter: 1rem;
+  --raio: 1rem;
+  --sombra: 5px 5px 0 var(--tinta);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--fonte-texto);
+  font-weight: 400;
+  color: var(--tinta);
+  background-color: var(--papel);
+  background-image: radial-gradient(rgba(27, 27, 47, 0.1) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fonte-titulo);
+  font-weight: 400;
+  letter-spacing: 1px;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+
+h1 { font-size: clamp(2rem, 6vw, 3rem); }
+h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
+
+a { color: var(--azul); font-weight: 700; }
+
+.card {
+  background: var(--branco);
+  border: 3px solid var(--tinta);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 1.25rem;
+}
+
+.btn {
+  font: inherit;
+  font-family: var(--fonte-titulo);
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  color: var(--tinta);
+  background: var(--amarelo);
+  border: 3px solid var(--tinta);
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0 var(--tinta);
+  padding: 0.45rem 1.1rem;
+  transition: transform 0.08s, box-shadow 0.08s;
+
+  &:hover { background: var(--amarelo-escuro); }
+  &:active { transform: translate(3px, 3px); box-shadow: none; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &.azul { background: var(--azul); color: var(--amarelo); }
+  &.verde { background: var(--verde); color: var(--branco); }
+}
+
+.campo {
+  display: block;
+  margin-bottom: 0.9rem;
+
+  > span { display: block; font-weight: 800; margin-bottom: 0.25rem; }
+
+  input,
+  select {
+    width: 100%;
+    font: inherit;
+    padding: 0.55rem 0.75rem;
+    border: 3px solid var(--tinta);
+    border-radius: 0.6rem;
+    background: var(--branco);
+
+    &:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+  }
+}
+
+:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+
+@media (min-width: 768px) {
+  :root { --gutter: 2rem; }
+}

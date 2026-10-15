@@ -1,0 +1,23 @@
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--azul);
+  border-bottom: 4px solid var(--tinta);
+  padding: 0.6rem var(--gutter);
+}
+
+.marca {
+  font-family: var(--fonte-titulo);
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+  color: var(--amarelo);
+  text-decoration: none;
+  text-shadow: 2px 2px 0 var(--tinta);
+}
+
+.conteudo {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1rem var(--gutter) 3rem;
+}

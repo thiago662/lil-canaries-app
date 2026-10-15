@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fase 0: tudo negado. As rules de verdade chegam com o login (fase 1).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,72 @@
+name: CI e deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # No main (o que vai pro ar) a config real vem do secret FIREBASE_CONFIG: o objeto
+      # { apiKey: "...", ... } colado do Console (JSON ou literal JS). Não é segredo (vai no JS
+      # publicado); o secret só mantém o repo sem apontar pro projeto. Em PRs usa o example
+      # (modo emulador), que compila e roda os testes sem falar com o Firebase.
+      - name: Gerar firebase.config.ts
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          IS_MAIN: ${{ github.ref == 'refs/heads/main' }}
+        run: >-
+          node -e "
+          const fs = require('fs');
+          const out = 'src/environments/firebase.config.ts';
+          if (process.env.IS_MAIN !== 'true') {
+            fs.copyFileSync('src/environments/firebase.config.example.ts', out);
+          } else {
+            const c = new Function('return ' + (process.env.FIREBASE_CONFIG || 'null'))();
+            if (!c || !c.apiKey || !c.projectId || !c.authDomain || !c.appId)
+              throw new Error('Secret FIREBASE_CONFIG ausente ou incompleto (ver README)');
+            fs.writeFileSync(out, 'export const useEmulators = false;\nexport const firebaseConfig = ' + JSON.stringify(c) + ';\n');
+          }
+          "
+
+      - run: npx ng test --watch=false
+      - run: npm run build -- --base-href "/${{ github.event.repository.name }}/"
+      # Fallback de rotas da SPA: o Pages serve 404.html em rotas desconhecidas
+      - run: cp dist/lil-canaries-app/browser/index.html dist/lil-canaries-app/browser/404.html
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: dist/lil-canaries-app/browser
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
