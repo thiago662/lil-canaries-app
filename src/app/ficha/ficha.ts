@@ -132,7 +132,7 @@ import { Checkpoints } from './checkpoints';
     .avatar-opcao.ativo { background: var(--amarelo); box-shadow: 3px 3px 0 var(--tinta); }
     .erro { background: #ffe3e3; border: 3px solid var(--vermelho); border-radius: 0.6rem; padding: 0.5rem 0.75rem; font-weight: 800; }
     .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 1.25rem; }
-    @media (min-width: 768px) { .stats { grid-template-columns: repeat(5, 1fr); } }
+    @media (min-width: 768px) { .stats { grid-template-columns: repeat(3, 1fr); } }
     .stat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.1rem; background: var(--branco); border: 3px solid var(--tinta); border-radius: 0.75rem; padding: 0.7rem 0.4rem; box-shadow: 3px 3px 0 var(--tinta); }
     .stat .emoji { font-size: 1.6rem; }
     .stat .rotulo { font-weight: 800; font-size: 0.85rem; }
@@ -180,11 +180,12 @@ export class Ficha {
     const medidas = this.medidas();
     const linhas = ORDEM_TIPOS.map((tipo) => {
       const atual = valorAtual(medidas, tipo);
+      const padrao = TIPOS[tipo].padrao;
       return {
         rotulo: TIPOS[tipo].rotulo,
         emoji: TIPOS[tipo].emoji,
-        valor: atual ? formatar(tipo, atual.valor) : '—',
-        desde: atual ? `em ${dataBr(atual.data)}` : 'sem dados',
+        valor: atual ? formatar(tipo, atual.valor) : padrao ? formatar(tipo, padrao.valor) : '—',
+        desde: atual ? `em ${dataBr(atual.data)}` : (padrao?.legenda ?? 'sem dados'),
       };
     });
     const imc = imcAtual(medidas);

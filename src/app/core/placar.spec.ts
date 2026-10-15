@@ -36,6 +36,20 @@ describe('ranking', () => {
     expect(com.find((l) => l.canarinho.uid === 'b')?.variacao).toBeUndefined();
   });
 
+  it('apelidos: quem nunca lançou conta como 0, só o Marco sai do zero', () => {
+    const p = new Map<string, Medida[]>([['b', [m('apelidos', '2026-10-01', 21)]]]);
+    const { com, sem } = ranking(canarinhos, p, 'apelidos');
+    expect(sem).toHaveLength(0);
+    expect(com.map((l) => [l.canarinho.perfil.nome, l.valor])).toEqual([
+      ['Bia', 21],
+      ['Ana', 0],
+      ['Caio', 0],
+      ['Davi', 0],
+    ]);
+    expect(com[0].legenda).toBeUndefined();
+    expect(com[1].legenda).toBe('ficha limpa');
+  });
+
   it('ranking de IMC só inclui quem tem peso e altura', () => {
     const p = new Map(porUid).set('a', [m('peso', '2026-10-01', 81), m('altura', '2026-01-01', 180)]);
     const { com, sem } = ranking(canarinhos, p, 'imc');

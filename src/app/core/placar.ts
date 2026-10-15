@@ -1,11 +1,13 @@
 import type { Canarinho } from './ninho';
-import { Categoria, Medida, serieDe } from './medidas';
+import { Categoria, Medida, serieDe, TIPOS } from './medidas';
 
 export interface Linha {
   canarinho: Canarinho;
   valor: number;
   /** Diferença pro checkpoint anterior da mesma categoria. */
   variacao?: number;
+  /** Preenchido quando o valor é o padrão da categoria (nunca lançou), não um checkpoint. */
+  legenda?: string;
 }
 
 /** Ranking pelo valor atual (mais recente) da categoria; quem não tem dado vai pra `sem`. */
@@ -21,7 +23,9 @@ export function ranking(
     const s = serieDe(porUid.get(canarinho.uid) ?? [], cat);
     const atual = s.at(-1);
     if (!atual) {
-      sem.push(canarinho);
+      const padrao = cat === 'imc' ? undefined : TIPOS[cat].padrao;
+      if (padrao) com.push({ canarinho, valor: padrao.valor, legenda: padrao.legenda });
+      else sem.push(canarinho);
       continue;
     }
     const anterior = s.at(-2);

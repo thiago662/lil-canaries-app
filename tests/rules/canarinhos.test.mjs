@@ -128,6 +128,8 @@ describe('medidas', () => {
     await assertFails(setDoc(ref('thiago', 'peso_2026-13-40'), { ...medida, data: '2026-13-40' }));
     await assertFails(setDoc(ref('thiago', 'peso_2026-10-15'), { ...medida, extra: 1 }));
     await assertFails(setDoc(ref('thiago', 'peso_2026-10-15'), { tipo: 'peso', data: '2026-10-15' }));
+    await assertSucceeds(setDoc(ref('thiago', 'apelidos_2026-10-15'), { tipo: 'apelidos', data: '2026-10-15', valor: 21 }));
+    await assertFails(setDoc(ref('thiago', 'apelidos_2026-10-16'), { tipo: 'apelidos', data: '2026-10-16', valor: -3 }));
     await assertFails(setDoc(ref('thiago', 'ouro_2026-10-15'), { tipo: 'ouro', data: '2026-10-15', valor: 1 }));
   });
 });

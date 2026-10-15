@@ -1,4 +1,4 @@
-export type TipoMedida = 'peso' | 'altura' | 'salario' | 'peca';
+export type TipoMedida = 'peso' | 'altura' | 'salario' | 'peca' | 'apelidos';
 
 // Um checkpoint: o valor de um tipo numa data. O id é `${tipo}_${data}`, então só existe um por
 // tipo e dia (guardar de novo no mesmo dia corrige o valor sem mexer no resto da linha do tempo).
@@ -16,6 +16,10 @@ interface InfoTipo {
   min: number;
   max: number;
   passo: number;
+  /** Só números inteiros (contagens). */
+  inteiro?: boolean;
+  /** Valor de quem nunca lançou: em vez de "sem dados", conta como isso (a piada do contador). */
+  padrao?: { valor: number; legenda: string };
 }
 
 // Faixas espelhadas à mão em firestore.rules (validValor).
@@ -24,6 +28,16 @@ export const TIPOS: Record<TipoMedida, InfoTipo> = {
   altura: { rotulo: 'Altura', emoji: '📏', unidade: 'cm', min: 100, max: 250, passo: 1 },
   salario: { rotulo: 'Salário', emoji: '💰', unidade: 'R$/mês', min: 0, max: 10_000_000, passo: 0.01 },
   peca: { rotulo: 'Tamanho da peça', emoji: '🍆', unidade: 'cm', min: 0, max: 100, passo: 0.1 },
+  apelidos: {
+    rotulo: 'Apelidos pro Marco',
+    emoji: 'Ⓜ️',
+    unidade: 'nomes com M',
+    min: 0,
+    max: 100_000,
+    passo: 1,
+    inteiro: true,
+    padrao: { valor: 0, legenda: 'ficha limpa' },
+  },
 };
 
 export const ORDEM_TIPOS = Object.keys(TIPOS) as TipoMedida[];
@@ -87,6 +101,7 @@ export const CATEGORIAS: Record<Categoria, { rotulo: string; emoji: string }> = 
   altura: TIPOS.altura,
   salario: TIPOS.salario,
   peca: TIPOS.peca,
+  apelidos: TIPOS.apelidos,
 };
 
 export const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS) as Categoria[];
@@ -98,6 +113,7 @@ export function validar(tipo: TipoMedida, valor: number, data: string): string |
   const t = TIPOS[tipo];
   if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(data)) return 'Data inválida.';
   if (!Number.isFinite(valor)) return 'Valor inválido.';
+  if (t.inteiro && !Number.isInteger(valor)) return `${t.rotulo} tem que ser um número inteiro.`;
   if (valor < t.min || valor > t.max) {
     return `${t.rotulo} tem que ficar entre ${t.min} e ${t.max} ${t.unidade}.`;
   }

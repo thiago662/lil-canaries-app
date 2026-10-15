@@ -67,7 +67,7 @@ const MEDALHAS = ['🥇', '🥈', '🥉'];
                   </span>
                   <strong>{{ fmt(l.valor) }}</strong>
                   <span class="var" [class.sobe]="(l.variacao ?? 0) > 0" [class.desce]="(l.variacao ?? 0) < 0">
-                    {{ variacao(l.variacao) }}
+                    {{ l.legenda ?? variacao(l.variacao) }}
                   </span>
                 </a>
               </li>

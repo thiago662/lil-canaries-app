@@ -33,6 +33,7 @@ service cloud.firestore {
         || (tipo == 'altura' && v >= 100 && v <= 250)
         || (tipo == 'salario' && v >= 0 && v <= 10000000)
         || (tipo == 'peca' && v >= 0 && v <= 100)
+        || (tipo == 'apelidos' && v >= 0 && v <= 100000)
       );
     }
 
