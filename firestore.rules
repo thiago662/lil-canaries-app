@@ -47,6 +47,18 @@ service cloud.firestore {
         && validValor(d.tipo, d.valor);
     }
 
+    // Meta de uma categoria (uma por tipo: o id é o tipo), com prazo opcional.
+    function validMeta(id, d) {
+      return d.keys().hasOnly(['tipo', 'valor', 'data'])
+        && d.keys().hasAll(['tipo', 'valor'])
+        && d.tipo is string
+        && id == d.tipo
+        && validValor(d.tipo, d.valor)
+        && (!d.keys().hasAll(['data'])
+            || (d.data is string
+                && d.data.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')));
+    }
+
     // Apelido com M pro Marco. O id é o texto sem acento/maiúscula/símbolos (o cliente normaliza):
     // só `create` é permitido, então o mesmo apelido nunca é lançado duas vezes nem sobrescrito.
     function validApelido(id, d) {
@@ -72,12 +84,21 @@ service cloud.firestore {
       allow read: if isCanarinho();
     }
 
+    match /{path=**}/metas/{id} {
+      allow read: if isCanarinho();
+    }
+
     match /canarinhos/{uid} {
       allow read: if isCanarinho();
       allow update: if isDono(uid) && validPerfil(request.resource.data);
 
       match /medidas/{id} {
         allow create, update: if isDono(uid) && validMedida(id, request.resource.data);
+        allow delete: if isDono(uid);
+      }
+
+      match /metas/{id} {
+        allow create, update: if isDono(uid) && validMeta(id, request.resource.data);
         allow delete: if isDono(uid);
       }
     }

@@ -17,6 +17,7 @@ const usuarios = [
       ['salario', '2026-10-01', 5000],
       ['peca', '2026-10-01', 12],
     ],
+    metas: [['peso', 78, '2026-12-31']], // [tipo, valor, prazo?]
   },
   { email: 'igor@teste.local', nome: 'Igor', avatar: '🦜', checkpoints: [] },
   {
@@ -26,6 +27,7 @@ const usuarios = [
     checkpoints: [
       ['peso', '2026-10-15', 107],
     ],
+    metas: [['peso', 100]],
   },
 ];
 
@@ -88,6 +90,9 @@ for (const u of usuarios) {
   await gravar(`canarinhos/${uid}`, { nome: u.nome, apelido: '', avatar: u.avatar });
   for (const [tipo, data, valor] of u.checkpoints) {
     await gravar(`canarinhos/${uid}/medidas/${tipo}_${data}`, { tipo, data, valor });
+  }
+  for (const [tipo, valor, data] of u.metas ?? []) {
+    await gravar(`canarinhos/${uid}/metas/${tipo}`, data ? { tipo, valor, data } : { tipo, valor });
   }
   console.log(`${u.nome}: ${u.email} / password123 (uid ${uid})`);
 }

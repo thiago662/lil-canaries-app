@@ -175,3 +175,47 @@ describe('apelidos com M', () => {
     await assertSucceeds(deleteDoc(ref('thiago', 'marmelo')));
   });
 });
+
+describe('metas', () => {
+  const meta = (extra = {}) => ({ tipo: 'peso', valor: 78, ...extra });
+  const ref = (uid, id, alvo = 'thiago') => doc(como(uid), `canarinhos/${alvo}/metas/${id}`);
+
+  it('dono cria, troca e apaga a própria meta, com ou sem prazo', async () => {
+    await assertSucceeds(setDoc(ref('thiago', 'peso'), meta()));
+    await assertSucceeds(setDoc(ref('thiago', 'peso'), meta({ valor: 75, data: '2026-12-31' })));
+    await assertSucceeds(setDoc(ref('thiago', 'altura'), { tipo: 'altura', valor: 182 }));
+    await assertSucceeds(deleteDoc(ref('thiago', 'peso')));
+  });
+
+  it('outro canarinho não escreve nem apaga a meta de ninguém', async () => {
+    await assertFails(setDoc(ref('igor', 'peso'), meta()));
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'canarinhos/thiago/metas/peso'), meta()),
+    );
+    await assertFails(deleteDoc(ref('igor', 'peso')));
+    await assertFails(setDoc(ref('igor', 'peso'), meta({ valor: 1 }))); // nem trocar
+  });
+
+  it('todo canarinho lê as metas (inclusive numa consulta só); sem perfil não', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'canarinhos/thiago/metas/peso'), meta()),
+    );
+    await assertSucceeds(getDoc(ref('igor', 'peso')));
+    const snap = await assertSucceeds(getDocs(collectionGroup(como('igor'), 'metas')));
+    assert.equal(snap.size, 1);
+    await assertFails(getDoc(ref('intruso', 'peso')));
+    await assertFails(getDocs(collectionGroup(como('intruso'), 'metas')));
+  });
+
+  it('id tem que ser o tipo; valor na faixa; prazo com data válida; sem campo extra', async () => {
+    await assertFails(setDoc(ref('thiago', 'qualquer'), meta()));
+    await assertFails(setDoc(ref('thiago', 'altura'), meta())); // id diferente do tipo
+    await assertFails(setDoc(ref('thiago', 'peso'), meta({ valor: 5 })));
+    await assertFails(setDoc(ref('thiago', 'peso'), meta({ valor: '78' })));
+    await assertFails(setDoc(ref('thiago', 'peso'), meta({ data: '31/12/2026' })));
+    await assertFails(setDoc(ref('thiago', 'peso'), meta({ data: 20261231 })));
+    await assertFails(setDoc(ref('thiago', 'peso'), meta({ extra: 1 })));
+    await assertFails(setDoc(ref('thiago', 'peso'), { tipo: 'peso' }));
+    await assertFails(setDoc(ref('thiago', 'imc'), { tipo: 'imc', valor: 25 })); // categoria derivada
+  });
+});

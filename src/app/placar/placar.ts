@@ -66,7 +66,7 @@ const MEDALHAS = ['🥇', '🥈', '🥉'];
                   </span>
                   <strong>{{ fmt(l.valor) }}</strong>
                   <span class="var" [class.sobe]="(l.variacao ?? 0) > 0" [class.desce]="(l.variacao ?? 0) < 0">
-                    {{ l.legenda ?? variacao(l.variacao) }}
+                    {{ l.legenda ?? variacao(l.variacao) }}@if (l.meta !== undefined) { · meta {{ fmt(l.meta) }} }
                   </span>
                 </a>
               </li>
@@ -142,6 +142,7 @@ export class Placar {
       this.cat(),
       this.crescente(),
       this.ninho.apelidos(),
+      this.ninho.metas(),
     ),
   );
 

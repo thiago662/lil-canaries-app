@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService, AVATARES } from '../core/auth.service';
@@ -10,12 +10,17 @@ import {
   formatarApelidos,
   formatarCategoria,
   formatarImc,
+  hoje,
   imcAtual,
   ORDEM_CATEGORIAS,
   ORDEM_TIPOS,
   TIPOS,
+  TipoMedida,
+  validar,
   valorAtual,
 } from '../core/medidas';
+import { diasAte, seriePlanejada, statusMeta } from '../core/metas';
+import { MetasService } from '../core/metas.service';
 import { Ninho } from '../core/ninho';
 import { serieCanarinho } from '../core/placar';
 import { Grafico, Serie } from '../shared/grafico';
@@ -103,7 +108,39 @@ import { Checkpoints } from './checkpoints';
             </button>
           }
         </div>
-        <app-grafico [series]="serie()" [formato]="fmt" />
+        <app-grafico [series]="serie()" [formato]="fmt" [legenda]="!!metaAtual()" />
+
+        @if (metaTipo(); as tipo) {
+          @if (statusTexto(); as texto) {
+            <p class="meta-status" [class.batida]="status()?.batida">{{ texto }}</p>
+          }
+          @if (editavel()) {
+            <form class="meta" (ngSubmit)="salvarMeta()">
+              <label class="campo">
+                <span>Meta de {{ info[tipo].rotulo }} ({{ tipos[tipo].unidade }})</span>
+                <input
+                  type="number"
+                  name="metaValor"
+                  inputmode="decimal"
+                  [step]="tipos[tipo].passo"
+                  [ngModel]="metaValor()"
+                  (ngModelChange)="metaValor.set($event)"
+                />
+              </label>
+              <label class="campo">
+                <span>Até quando (opcional)</span>
+                <input type="date" name="metaData" [ngModel]="metaData()" (ngModelChange)="metaData.set($event)" />
+              </label>
+              <button class="btn verde" type="submit">{{ metaAtual() ? 'Atualizar meta' : 'Definir meta' }}</button>
+              @if (metaAtual()) {
+                <button class="btn" type="button" (click)="removerMeta()">Remover</button>
+              }
+            </form>
+            @if (erroMeta()) {
+              <p class="erro" role="alert">{{ erroMeta() }}</p>
+            }
+          }
+        }
       </section>
 
       <app-checkpoints [uid]="uid()" [medidas]="medidas()" [editavel]="editavel()" />
@@ -137,11 +174,16 @@ import { Checkpoints } from './checkpoints';
     .stat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.1rem; background: var(--branco); border: 3px solid var(--tinta); border-radius: 0.75rem; padding: 0.7rem 0.4rem; box-shadow: 3px 3px 0 var(--tinta); }
     .stat .emoji { font-size: 1.6rem; }
     .stat .rotulo { font-weight: 800; font-size: 0.85rem; }
-    .stat strong { font-family: var(--fonte-titulo); font-weight: 400; font-size: 1.5rem; letter-spacing: 1px; color: var(--azul); }
+    .stat strong { font-family: var(--fonte-titulo); font-weight: 400; font-size: 1.5rem; letter-spacing: 1px; color: var(--azul); text-wrap: balance; }
     .stat small { opacity: 0.65; font-weight: 700; }
     .filtros { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
     .chip { font: inherit; font-weight: 800; cursor: pointer; background: var(--branco); border: 3px solid var(--tinta); border-radius: 2rem; padding: 0.2rem 0.75rem; }
     .chip.ativo { background: var(--azul); color: var(--amarelo); }
+    .meta-status { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; font-weight: 800; background: #fff3bf; border: 3px solid var(--tinta); border-radius: 0.6rem; }
+    .meta-status.batida { background: #dff5e3; border-color: var(--verde); }
+    .meta { display: grid; gap: 0 1rem; grid-template-columns: 1fr; align-items: end; margin-top: 1rem; }
+    .meta .btn { margin-bottom: 0.9rem; }
+    @media (min-width: 768px) { .meta { grid-template-columns: 2fr 2fr auto auto; } }
   `,
 })
 export class Ficha {
@@ -149,7 +191,9 @@ export class Ficha {
   readonly uid = input.required<string>();
 
   private readonly auth = inject(AuthService);
+  private readonly metas = inject(MetasService);
   protected readonly ninho = inject(Ninho);
+  protected readonly tipos = TIPOS;
 
   protected readonly avatares = AVATARES;
   protected readonly categorias = ORDEM_CATEGORIAS;
@@ -175,15 +219,104 @@ export class Ficha {
       : [];
   }
 
-  protected readonly serie = computed<Serie[]>(() => [
-    {
-      nome: this.info[this.graficoCat()].rotulo,
-      cor: '#1d4fa3',
-      pontos: this.serieDe(this.graficoCat()),
-    },
-  ]);
-
   protected readonly fmt = (v: number) => formatarCategoria(this.graficoCat(), v);
+
+  // ---- meta (só as categorias que são checkpoints; IMC e apelidos são derivados)
+  protected readonly metaTipo = computed<TipoMedida | null>(() => {
+    const cat = this.graficoCat();
+    return cat in TIPOS ? (cat as TipoMedida) : null;
+  });
+
+  // `equal` por valor: um snapshot de metas alheias não deve apagar o que a pessoa está digitando
+  protected readonly metaAtual = computed(
+    () => {
+      const tipo = this.metaTipo();
+      return tipo
+        ? this.ninho.metas().find((m) => m.uid === this.uid() && m.tipo === tipo)
+        : undefined;
+    },
+    { equal: (a, b) => a?.tipo === b?.tipo && a?.valor === b?.valor && a?.data === b?.data },
+  );
+
+  protected readonly metaValor = signal<number | null>(null);
+  protected readonly metaData = signal('');
+  protected readonly erroMeta = signal('');
+
+  protected readonly status = computed(() => {
+    const meta = this.metaAtual();
+    return meta ? statusMeta(this.serieDe(this.graficoCat()), meta) : undefined;
+  });
+
+  protected readonly statusTexto = computed(() => {
+    const meta = this.metaAtual();
+    if (!meta) return '';
+    const alvo = this.fmt(meta.valor);
+    const s = this.status();
+    if (!s) return `Meta de ${alvo}. Sem checkpoints ainda pra comparar.`;
+    if (s.batida) return `🎯 Meta batida! Tá em ${this.fmt(s.atual)} (meta ${alvo}).`;
+    let texto = `Falta ${this.fmt(Math.abs(s.falta))} ${s.falta < 0 ? 'pra descer' : 'pra subir'} até ${alvo}`;
+    if (meta.data) {
+      const d = diasAte(meta.data);
+      texto +=
+        d > 0
+          ? ` · sobram ${d} ${d === 1 ? 'dia' : 'dias'}`
+          : d === 0
+            ? ' · o prazo é hoje!'
+            : ` · o prazo estourou há ${-d} ${-d === 1 ? 'dia' : 'dias'} 💀`;
+    }
+    return `${texto}.`;
+  });
+
+  protected readonly serie = computed<Serie[]>(() => {
+    const real = this.serieDe(this.graficoCat());
+    const meta = this.metaAtual();
+    const lista: Serie[] = [
+      { nome: meta ? 'Real' : this.info[this.graficoCat()].rotulo, cor: '#1d4fa3', pontos: real },
+    ];
+    if (meta) {
+      lista.push({ nome: 'Planejado', cor: '#f26b21', pontos: seriePlanejada(real, meta), semPontos: true });
+    }
+    return lista;
+  });
+
+  constructor() {
+    effect(() => {
+      const meta = this.metaAtual();
+      this.metaValor.set(meta?.valor ?? null);
+      this.metaData.set(meta?.data ?? '');
+      this.erroMeta.set('');
+    });
+  }
+
+  protected async salvarMeta() {
+    const tipo = this.metaTipo();
+    if (!tipo) return;
+    const valor = this.metaValor();
+    if (valor === null || valor === undefined || `${valor}` === '') {
+      return this.erroMeta.set('Falta o valor da meta.');
+    }
+    const data = this.metaData();
+    const problema = validar(tipo, Number(valor), data || hoje());
+    if (problema) return this.erroMeta.set(problema);
+    this.erroMeta.set('');
+    try {
+      await this.metas.salvar(this.uid(), { tipo, valor: Number(valor), data: data || undefined });
+    } catch (e) {
+      console.error(e);
+      this.erroMeta.set('Não consegui salvar a meta.');
+    }
+  }
+
+  protected async removerMeta() {
+    const tipo = this.metaTipo();
+    if (!tipo || !confirm(`Remover a meta de ${TIPOS[tipo].rotulo}?`)) return;
+    try {
+      await this.metas.remover(this.uid(), tipo);
+    } catch (e) {
+      console.error(e);
+      this.erroMeta.set('Não consegui remover a meta.');
+    }
+  }
 
   protected readonly stats = computed(() => {
     const medidas = this.medidas();

@@ -1,5 +1,6 @@
 import { Apelido, ehAlvo, serieApelidos } from './apelidos';
 import { Categoria, CATEGORIAS, Medida, Ponto, serieDe } from './medidas';
+import type { MetaDe } from './metas';
 import type { Canarinho } from './ninho';
 
 export interface Linha {
@@ -9,6 +10,8 @@ export interface Linha {
   variacao?: number;
   /** Preenchido quando o valor é o padrão da categoria (nunca lançou), não um checkpoint. */
   legenda?: string;
+  /** A meta do canarinho nessa categoria, se tiver. */
+  meta?: number;
 }
 
 /** Série de uma categoria pra um canarinho. Apelidos só têm série pro Marco (o alvo). */
@@ -29,6 +32,7 @@ export function ranking(
   cat: Categoria,
   crescente = false,
   apelidos: Apelido[] = [],
+  metas: MetaDe[] = [],
 ): { com: Linha[]; sem: Canarinho[] } {
   const com: Linha[] = [];
   const sem: Canarinho[] = [];
@@ -42,7 +46,13 @@ export function ranking(
       continue;
     }
     const anterior = s.at(-2);
-    com.push({ canarinho, valor: atual.valor, variacao: anterior && atual.valor - anterior.valor });
+    const meta = metas.find((m) => m.uid === canarinho.uid && m.tipo === cat)?.valor;
+    com.push({
+      canarinho,
+      valor: atual.valor,
+      variacao: anterior && atual.valor - anterior.valor,
+      meta,
+    });
   }
   com.sort(
     (a, b) =>

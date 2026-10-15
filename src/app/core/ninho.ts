@@ -4,6 +4,7 @@ import { AuthService, Perfil } from './auth.service';
 import { db } from './firebase';
 import { Apelido } from './apelidos';
 import { Medida } from './medidas';
+import { Meta, MetaDe } from './metas';
 
 export interface Canarinho {
   uid: string;
@@ -19,6 +20,7 @@ export class Ninho {
 
   readonly canarinhos = signal<Canarinho[]>([]);
   readonly apelidos = signal<Apelido[]>([]);
+  readonly metas = signal<MetaDe[]>([]);
   readonly pronto = signal(false);
   readonly erro = signal(false);
   private readonly todas = signal<(Medida & { uid: string })[]>([]);
@@ -40,7 +42,8 @@ export class Ninho {
       let perfis = false;
       let medidas = false;
       let apelidos = false;
-      const chegou = () => this.pronto.set(perfis && medidas && apelidos);
+      let metas = false;
+      const chegou = () => this.pronto.set(perfis && medidas && apelidos && metas);
       const falhou = (e: Error) => {
         console.error(e);
         this.erro.set(true);
@@ -86,12 +89,24 @@ export class Ninho {
           },
           falhou,
         ),
+        onSnapshot(
+          collectionGroup(db, 'metas'),
+          (snap) => {
+            this.metas.set(
+              snap.docs.map((d) => ({ uid: d.ref.parent.parent!.id, ...(d.data() as Meta) })),
+            );
+            metas = true;
+            chegou();
+          },
+          falhou,
+        ),
       ];
 
       onCleanup(() => {
         parar.forEach((p) => p());
         this.canarinhos.set([]);
         this.apelidos.set([]);
+        this.metas.set([]);
         this.todas.set([]);
         this.pronto.set(false);
         this.erro.set(false);

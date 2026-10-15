@@ -16,6 +16,8 @@ export interface Serie {
   nome: string;
   cor: string;
   pontos: Ponto[];
+  /** Só a linha, sem bolinhas (a reta do planejado). */
+  semPontos?: boolean;
 }
 
 // Cores distintas pra até 12 canarinhos no mesmo gráfico.
@@ -69,8 +71,8 @@ export class Grafico {
             borderColor: s.cor,
             backgroundColor: s.cor,
             borderWidth: 3,
-            pointRadius: 5,
-            pointHoverRadius: 7,
+            pointRadius: s.semPontos ? 0 : 5,
+            pointHoverRadius: s.semPontos ? 0 : 7,
             pointBorderColor: '#1b1b2f',
             pointBorderWidth: 2,
             tension: 0.2,
