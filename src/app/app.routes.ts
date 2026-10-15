@@ -10,7 +10,13 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('./ficha/ficha').then((m) => m.Ficha),
+    children: [
+      { path: '', loadComponent: () => import('./placar/placar').then((m) => m.Placar) },
+      {
+        path: 'canarinho/:uid',
+        loadComponent: () => import('./ficha/ficha').then((m) => m.Ficha),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

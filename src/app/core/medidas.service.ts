@@ -1,15 +1,5 @@
 import { Injectable } from '@angular/core';
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-  Unsubscribe,
-  writeBatch,
-} from 'firebase/firestore';
+import { deleteDoc, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { idMedida, Medida, TipoMedida } from './medidas';
 
@@ -19,20 +9,6 @@ type Dados = { tipo: TipoMedida; data: string; valor: number };
 export class MedidasService {
   private ref(uid: string, id: string) {
     return doc(db, 'canarinhos', uid, 'medidas', id);
-  }
-
-  /** Checkpoints do canarinho, do mais novo pro mais velho, ao vivo. */
-  observar(
-    uid: string,
-    aoMudar: (medidas: Medida[]) => void,
-    aoErro: (e: Error) => void,
-  ): Unsubscribe {
-    const q = query(collection(db, 'canarinhos', uid, 'medidas'), orderBy('data', 'desc'));
-    return onSnapshot(
-      q,
-      (snap) => aoMudar(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Dados) }))),
-      aoErro,
-    );
   }
 
   /** Cria o checkpoint ou, se já existe um nesse tipo e dia, corrige o valor. */

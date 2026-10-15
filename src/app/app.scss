@@ -20,11 +20,6 @@
   text-shadow: 2px 2px 0 var(--tinta);
 }
 
-.quem {
-  color: var(--branco);
-  font-weight: 800;
-}
-
 .sair {
   font: inherit;
   font-weight: 800;
@@ -36,8 +31,57 @@
   padding: 0.1rem 0.7rem;
 }
 
+// Celular: barra fixa embaixo, no alcance do polegar.
+.nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: flex;
+  background: var(--branco);
+  border-top: 4px solid var(--tinta);
+
+  a {
+    flex: 1;
+    text-align: center;
+    padding: 0.7rem 0.4rem;
+    font-weight: 800;
+    color: var(--tinta);
+    text-decoration: none;
+  }
+
+  a.ativo {
+    background: var(--amarelo);
+  }
+}
+
 .conteudo {
   max-width: 64rem;
   margin: 0 auto;
-  padding: 1rem var(--gutter) 3rem;
+  padding: 1rem var(--gutter) 6rem;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    position: static;
+    background: transparent;
+    border: 0;
+    gap: 0.5rem;
+
+    a {
+      flex: none;
+      padding: 0.1rem 0.8rem;
+      color: var(--tinta);
+      background: var(--branco);
+      border: 3px solid var(--tinta);
+      border-radius: 0.6rem;
+    }
+
+    a.ativo {
+      background: var(--amarelo);
+    }
+  }
+
+  .conteudo {
+    padding-bottom: 3rem;
+  }
 }

@@ -18,6 +18,7 @@ import {
   selector: 'app-checkpoints',
   imports: [FormsModule],
   template: `
+    @if (editavel()) {
     <section class="card">
       <h2>Novo checkpoint</h2>
       <form (ngSubmit)="adicionar()" class="form">
@@ -62,6 +63,7 @@ import {
         <p class="erro" role="alert">{{ erro() }}</p>
       }
     </section>
+    }
 
     <section class="card lista">
       <h2>Histórico</h2>

@@ -1,4 +1,14 @@
-import { dataBr, formatar, idMedida, imc, imcAtual, Medida, validar, valorAtual } from './medidas';
+import {
+  dataBr,
+  formatar,
+  idMedida,
+  imc,
+  imcAtual,
+  Medida,
+  serieImc,
+  validar,
+  valorAtual,
+} from './medidas';
 
 const m = (tipo: Medida['tipo'], data: string, valor: number): Medida => ({
   id: idMedida(tipo, data),
@@ -32,6 +42,25 @@ describe('medidas', () => {
     );
     expect(valorAtual(corrigida, 'peso')?.valor).toBe(81);
     expect(corrigida.filter((x, i) => x.valor !== lista[i].valor)).toHaveLength(1);
+  });
+
+  it('serieImc muda quando o peso muda e quando a altura muda', () => {
+    const s = serieImc([
+      m('peso', '2026-08-01', 90),
+      m('peso', '2026-10-01', 81),
+      m('altura', '2026-01-01', 180),
+      m('altura', '2026-09-01', 190),
+    ]);
+    // 2026-01-01 ainda não tem peso: a série só começa no primeiro peso (08-01)
+    expect(s.map((p) => p.data)).toEqual(['2026-08-01', '2026-09-01', '2026-10-01']);
+    expect(s[0].valor).toBeCloseTo(imc(90, 180), 5);
+    expect(s[1].valor).toBeCloseTo(imc(90, 190), 5); // só a altura mudou
+    expect(s[2].valor).toBeCloseTo(imc(81, 190), 5); // só o peso mudou
+  });
+
+  it('peso medido antes da primeira altura usa a primeira altura', () => {
+    const s = serieImc([m('peso', '2026-01-01', 80), m('altura', '2026-06-01', 180)]);
+    expect(s[0]).toEqual({ data: '2026-01-01', valor: imc(80, 180) });
   });
 
   it('validar rejeita data e faixa inválidas', () => {

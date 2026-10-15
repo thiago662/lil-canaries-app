@@ -41,11 +41,58 @@ export function valorAtual(medidas: Medida[], tipo: TipoMedida): Medida | undefi
 
 export const imc = (pesoKg: number, alturaCm: number) => pesoKg / (alturaCm / 100) ** 2;
 
-export function imcAtual(medidas: Medida[]): number | undefined {
-  const peso = valorAtual(medidas, 'peso');
-  const altura = valorAtual(medidas, 'altura');
-  return peso && altura ? imc(peso.valor, altura.valor) : undefined;
+export interface Ponto {
+  data: string;
+  valor: number;
 }
+
+const porData = (a: Ponto, b: Ponto) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+
+/** Checkpoints de um tipo em ordem cronológica. */
+export function serie(medidas: Medida[], tipo: TipoMedida): Ponto[] {
+  return medidas
+    .filter((m) => m.tipo === tipo)
+    .map(({ data, valor }) => ({ data, valor }))
+    .sort(porData);
+}
+
+/**
+ * IMC ao longo do tempo: um ponto em cada data em que peso ou altura mudou, usando o peso e a
+ * altura vigentes nela. Antes da primeira altura medida, vale a primeira (altura quase não muda).
+ */
+export function serieImc(medidas: Medida[]): Ponto[] {
+  const pesos = serie(medidas, 'peso');
+  const alturas = serie(medidas, 'altura');
+  if (!pesos.length || !alturas.length) return [];
+  const vigente = (s: Ponto[], data: string) => s.filter((p) => p.data <= data).at(-1);
+  const datas = [...new Set([...pesos, ...alturas].map((p) => p.data))].sort();
+  const pontos: Ponto[] = [];
+  for (const data of datas) {
+    const peso = vigente(pesos, data);
+    if (!peso) continue;
+    const altura = vigente(alturas, data) ?? alturas[0];
+    pontos.push({ data, valor: imc(peso.valor, altura.valor) });
+  }
+  return pontos;
+}
+
+export const imcAtual = (medidas: Medida[]): number | undefined => serieImc(medidas).at(-1)?.valor;
+
+// O que dá pra ranquear e plotar: os 4 tipos mais o IMC (derivado).
+export type Categoria = TipoMedida | 'imc';
+
+export const CATEGORIAS: Record<Categoria, { rotulo: string; emoji: string }> = {
+  peso: TIPOS.peso,
+  imc: { rotulo: 'IMC', emoji: '🧮' },
+  altura: TIPOS.altura,
+  salario: TIPOS.salario,
+  peca: TIPOS.peca,
+};
+
+export const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS) as Categoria[];
+
+export const serieDe = (medidas: Medida[], cat: Categoria): Ponto[] =>
+  cat === 'imc' ? serieImc(medidas) : serie(medidas, cat);
 
 export function validar(tipo: TipoMedida, valor: number, data: string): string | null {
   const t = TIPOS[tipo];
@@ -67,7 +114,10 @@ export function formatar(tipo: TipoMedida, valor: number): string {
 export const formatarImc = (v: number) =>
   new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(v);
 
-export const dataBr = (data: string) => data.split('-').reverse().join('/');
+export const formatarCategoria = (cat: Categoria, valor: number) =>
+  cat === 'imc' ? formatarImc(valor) : formatar(cat, valor);
+
+export const dataBr =(data: string) => data.split('-').reverse().join('/');
 
 export function hoje(): string {
   const d = new Date();

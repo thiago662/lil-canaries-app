@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import {
@@ -5,7 +6,16 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  collectionGroup,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 const perfil = { nome: 'Thiago', apelido: '', avatar: '🐤' };
 const medida = { tipo: 'peso', data: '2026-10-15', valor: 81 };
@@ -47,6 +57,24 @@ describe('leitura', () => {
   it('canarinho lê perfil e medidas de outro', async () => {
     await assertSucceeds(getDoc(doc(como('igor'), 'canarinhos/thiago')));
     await assertSucceeds(getDoc(doc(como('igor'), 'canarinhos/thiago/medidas/peso_2026-10-15')));
+  });
+});
+
+describe('collectionGroup (placar)', () => {
+  it('canarinho lê os checkpoints de todos numa consulta só', async () => {
+    const snap = await assertSucceeds(getDocs(collectionGroup(como('igor'), 'medidas')));
+    assert.equal(snap.size, 1);
+  });
+
+  it('nega sem login e sem perfil', async () => {
+    await assertFails(getDocs(collectionGroup(env.unauthenticatedContext().firestore(), 'medidas')));
+    await assertFails(getDocs(collectionGroup(como('intruso'), 'medidas')));
+  });
+
+  it('lista os perfis só pra canarinho', async () => {
+    const snap = await assertSucceeds(getDocs(collection(como('igor'), 'canarinhos')));
+    assert.equal(snap.size, 2);
+    await assertFails(getDocs(collection(como('intruso'), 'canarinhos')));
   });
 });
 

@@ -47,12 +47,17 @@ service cloud.firestore {
         && validValor(d.tipo, d.valor);
     }
 
+    // Leitura de todos os checkpoints numa consulta só (collectionGroup('medidas')); também
+    // vale pra ler os de um canarinho específico.
+    match /{path=**}/medidas/{id} {
+      allow read: if isCanarinho();
+    }
+
     match /canarinhos/{uid} {
       allow read: if isCanarinho();
       allow update: if isDono(uid) && validPerfil(request.resource.data);
 
       match /medidas/{id} {
-        allow read: if isCanarinho();
         allow create, update: if isDono(uid) && validMedida(id, request.resource.data);
         allow delete: if isDono(uid);
       }

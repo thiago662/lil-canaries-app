@@ -1,93 +1,131 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService, AVATARES } from '../core/auth.service';
 import {
+  Categoria,
+  CATEGORIAS,
   dataBr,
   formatar,
+  formatarCategoria,
   formatarImc,
   imcAtual,
-  Medida,
+  ORDEM_CATEGORIAS,
   ORDEM_TIPOS,
+  serieDe,
   TIPOS,
   valorAtual,
 } from '../core/medidas';
-import { MedidasService } from '../core/medidas.service';
+import { Ninho } from '../core/ninho';
+import { Grafico, Serie } from '../shared/grafico';
 import { Checkpoints } from './checkpoints';
 
-// "Minha ficha": figurinha com os valores de hoje, perfil editável e os checkpoints.
+// Ficha de um canarinho: figurinha com os valores de hoje, gráfico e checkpoints.
+// A própria ficha é editável; a dos outros é só leitura.
 @Component({
-  imports: [FormsModule, Checkpoints],
+  imports: [FormsModule, RouterLink, Checkpoints, Grafico],
   template: `
-    <section class="card figurinha">
-      <div class="cabeca">
-        <span class="avatar" aria-hidden="true">{{ perfil()?.avatar }}</span>
-        <div>
-          <h1>{{ perfil()?.nome }}</h1>
-          @if (perfil()?.apelido) {
-            <p class="apelido">"{{ perfil()?.apelido }}"</p>
-          }
-        </div>
-        <button class="btn mini" (click)="abrirPerfil()">✏️ Perfil</button>
-      </div>
-
-      @if (editandoPerfil()) {
-        <form class="perfil" (ngSubmit)="salvarPerfil()">
-          <label class="campo">
-            <span>Apelido</span>
-            <input
-              name="apelido"
-              maxlength="30"
-              [ngModel]="apelido()"
-              (ngModelChange)="apelido.set($event)"
-            />
-          </label>
-          <div class="avatares" role="radiogroup" aria-label="Avatar">
-            @for (a of avatares; track a) {
-              <button
-                type="button"
-                class="avatar-opcao"
-                role="radio"
-                [attr.aria-checked]="avatar() === a"
-                [class.ativo]="avatar() === a"
-                (click)="avatar.set(a)"
-              >
-                {{ a }}
-              </button>
+    @if (perfil(); as p) {
+      <section class="card figurinha">
+        <div class="cabeca">
+          <span class="avatar" aria-hidden="true">{{ p.avatar }}</span>
+          <div>
+            <h1>{{ p.nome }}</h1>
+            @if (p.apelido) {
+              <p class="apelido">"{{ p.apelido }}"</p>
             }
           </div>
-          <button class="btn verde" type="submit">Salvar perfil</button>
-        </form>
-      }
+          @if (editavel()) {
+            <button class="btn mini" (click)="abrirPerfil()">✏️ Perfil</button>
+          } @else {
+            <a class="btn mini" routerLink="/">🏆 Placar</a>
+          }
+        </div>
 
-      @if (erro()) {
-        <p class="erro" role="alert">{{ erro() }}</p>
-      }
-
-      <div class="stats">
-        @for (s of stats(); track s.rotulo) {
-          <div class="stat">
-            <span class="emoji" aria-hidden="true">{{ s.emoji }}</span>
-            <span class="rotulo">{{ s.rotulo }}</span>
-            <strong>{{ s.valor }}</strong>
-            <small>{{ s.desde }}</small>
-          </div>
+        @if (editandoPerfil()) {
+          <form class="perfil" (ngSubmit)="salvarPerfil()">
+            <label class="campo">
+              <span>Apelido</span>
+              <input
+                name="apelido"
+                maxlength="30"
+                [ngModel]="apelido()"
+                (ngModelChange)="apelido.set($event)"
+              />
+            </label>
+            <div class="avatares" role="radiogroup" aria-label="Avatar">
+              @for (a of avatares; track a) {
+                <button
+                  type="button"
+                  class="avatar-opcao"
+                  role="radio"
+                  [attr.aria-checked]="avatar() === a"
+                  [class.ativo]="avatar() === a"
+                  (click)="avatar.set(a)"
+                >
+                  {{ a }}
+                </button>
+              }
+            </div>
+            <button class="btn verde" type="submit">Salvar perfil</button>
+          </form>
         }
-      </div>
-    </section>
 
-    @if (uid(); as id) {
-      <app-checkpoints [uid]="id" [medidas]="medidas()" />
+        @if (erro()) {
+          <p class="erro" role="alert">{{ erro() }}</p>
+        }
+
+        <div class="stats">
+          @for (s of stats(); track s.rotulo) {
+            <div class="stat">
+              <span class="emoji" aria-hidden="true">{{ s.emoji }}</span>
+              <span class="rotulo">{{ s.rotulo }}</span>
+              <strong>{{ s.valor }}</strong>
+              <small>{{ s.desde }}</small>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Evolução</h2>
+        <div class="filtros" role="tablist" aria-label="Categoria do gráfico">
+          @for (c of categorias; track c) {
+            <button
+              class="chip"
+              role="tab"
+              [attr.aria-selected]="graficoCat() === c"
+              [class.ativo]="graficoCat() === c"
+              (click)="graficoCat.set(c)"
+            >
+              {{ info[c].emoji }} {{ info[c].rotulo }}
+            </button>
+          }
+        </div>
+        <app-grafico [series]="serie()" [formato]="fmt" />
+      </section>
+
+      <app-checkpoints [uid]="uid()" [medidas]="medidas()" [editavel]="editavel()" />
+    } @else if (ninho.pronto()) {
+      <section class="card">
+        <h1>Canarinho não encontrado</h1>
+        <p>Esse ninho não tem esse canarinho.</p>
+        <a class="btn" routerLink="/">Voltar pro placar</a>
+      </section>
+    } @else {
+      <p class="carregando">Chamando o canarinho...</p>
     }
   `,
   styles: `
     :host { display: grid; gap: 1.25rem; }
+    .carregando { font-weight: 800; opacity: 0.75; }
     .figurinha { background: linear-gradient(180deg, var(--amarelo) 0, var(--amarelo) 7rem, var(--branco) 7rem); }
     .cabeca { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .cabeca > div { flex: 1; min-width: 8rem; }
     .cabeca h1 { margin: 0; }
     .apelido { margin: 0; font-weight: 800; }
     .avatar { font-size: 3.5rem; line-height: 1; background: var(--branco); border: 3px solid var(--tinta); border-radius: 50%; width: 5rem; height: 5rem; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--tinta); }
-    .mini { font-size: 1rem; padding: 0.2rem 0.7rem; }
+    .mini { font-size: 1rem; padding: 0.2rem 0.7rem; text-decoration: none; display: inline-block; }
     .perfil { margin-top: 1rem; padding: 1rem; background: var(--papel); border: 3px dashed var(--tinta); border-radius: 0.75rem; }
     .avatares { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
     .avatar-opcao { font-size: 1.8rem; cursor: pointer; background: var(--branco); border: 3px solid var(--tinta); border-radius: 0.75rem; width: 3.2rem; height: 3.2rem; }
@@ -100,21 +138,43 @@ import { Checkpoints } from './checkpoints';
     .stat .rotulo { font-weight: 800; font-size: 0.85rem; }
     .stat strong { font-family: var(--fonte-titulo); font-weight: 400; font-size: 1.5rem; letter-spacing: 1px; color: var(--azul); }
     .stat small { opacity: 0.65; font-weight: 700; }
+    .filtros { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .chip { font: inherit; font-weight: 800; cursor: pointer; background: var(--branco); border: 3px solid var(--tinta); border-radius: 2rem; padding: 0.2rem 0.75rem; }
+    .chip.ativo { background: var(--azul); color: var(--amarelo); }
   `,
 })
 export class Ficha {
+  /** Vem da rota /canarinho/:uid. */
+  readonly uid = input.required<string>();
+
   private readonly auth = inject(AuthService);
-  private readonly servico = inject(MedidasService);
+  protected readonly ninho = inject(Ninho);
 
-  protected readonly perfil = this.auth.perfil;
-  protected readonly uid = computed(() => this.auth.usuario()?.uid);
   protected readonly avatares = AVATARES;
+  protected readonly categorias = ORDEM_CATEGORIAS;
+  protected readonly info = CATEGORIAS;
 
-  protected readonly medidas = signal<Medida[]>([]);
+  protected readonly perfil = computed(
+    () => this.ninho.canarinhos().find((c) => c.uid === this.uid())?.perfil,
+  );
+  protected readonly editavel = computed(() => this.uid() === this.auth.usuario()?.uid);
+  protected readonly medidas = computed(() => this.ninho.medidasPorUid().get(this.uid()) ?? []);
+
   protected readonly erro = signal('');
   protected readonly editandoPerfil = signal(false);
   protected readonly apelido = signal('');
   protected readonly avatar = signal(AVATARES[0]);
+  protected readonly graficoCat = signal<Categoria>('peso');
+
+  protected readonly serie = computed<Serie[]>(() => [
+    {
+      nome: this.info[this.graficoCat()].rotulo,
+      cor: '#1d4fa3',
+      pontos: serieDe(this.medidas(), this.graficoCat()),
+    },
+  ]);
+
+  protected readonly fmt = (v: number) => formatarCategoria(this.graficoCat(), v);
 
   protected readonly stats = computed(() => {
     const medidas = this.medidas();
@@ -137,20 +197,6 @@ export class Ficha {
     });
     return linhas;
   });
-
-  constructor() {
-    const uid = this.uid();
-    if (!uid) return;
-    const parar = this.servico.observar(
-      uid,
-      (m) => this.medidas.set(m),
-      (e) => {
-        console.error(e);
-        this.erro.set('Não consegui carregar os checkpoints.');
-      },
-    );
-    inject(DestroyRef).onDestroy(parar);
-  }
 
   protected abrirPerfil() {
     this.apelido.set(this.perfil()?.apelido ?? '');
