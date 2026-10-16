@@ -29,6 +29,26 @@ export const PALETA = [
 const dia = 86_400_000;
 const epoch = (data: string) => Date.parse(data); // yyyy-MM-dd vira meia-noite UTC
 const curta = (ms: number) => dataBr(new Date(ms).toISOString().slice(0, 10)).slice(0, 5);
+const mesAno = (ms: number) => {
+  const iso = new Date(ms).toISOString();
+  return `${iso.slice(5, 7)}/${iso.slice(2, 4)}`;
+};
+
+/** Séries de mais de ~4 meses marcam o eixo todo dia 1 (de 1 em 1 mês, ou de k em k pra caber). */
+const LONGA = 120 * dia;
+
+function ticksMensais(min: number, max: number) {
+  const meses = Math.round((max - min) / (30.4 * dia));
+  const passo = Math.max(1, Math.ceil(meses / 7));
+  const ini = new Date(min);
+  const ticks: { value: number }[] = [];
+  let d = new Date(Date.UTC(ini.getUTCFullYear(), ini.getUTCMonth() + 1, 1));
+  while (d.getTime() <= max) {
+    ticks.push({ value: d.getTime() });
+    d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + passo, 1));
+  }
+  return ticks;
+}
 
 // Eixo X numérico (data em ms) pra que o espaço entre checkpoints reflita o tempo de verdade.
 @Component({
@@ -62,6 +82,7 @@ export class Grafico {
       const xs = this.series().flatMap((s) => s.pontos.map((p) => epoch(p.data)));
       const [min, max] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [Date.now(), Date.now()];
       const folga = Math.max(dia * 7, (max - min) * 0.05);
+      const longa = max - min > LONGA;
       const chart = new Chart(this.tela().nativeElement, {
         type: 'line',
         data: {
@@ -71,10 +92,11 @@ export class Grafico {
             borderColor: s.cor,
             backgroundColor: s.cor,
             borderWidth: 3,
-            pointRadius: s.semPontos ? 0 : 5,
+            // muitos pontos (ex.: uma série semanal) ficam menores pra não virar uma mancha
+            pointRadius: s.semPontos ? 0 : s.pontos.length > 30 ? 2.5 : 5,
             pointHoverRadius: s.semPontos ? 0 : 7,
             pointBorderColor: '#1b1b2f',
-            pointBorderWidth: 2,
+            pointBorderWidth: s.pontos.length > 30 ? 1 : 2,
             tension: 0.2,
           })),
         },
@@ -89,7 +111,12 @@ export class Grafico {
               type: 'linear',
               min: min - folga,
               max: max + folga,
-              ticks: { maxTicksLimit: 5, callback: (v) => curta(Number(v)) },
+              afterBuildTicks: longa
+                ? (eixo) => {
+                    eixo.ticks = ticksMensais(eixo.min, eixo.max);
+                  }
+                : undefined,
+              ticks: { maxTicksLimit: 8, callback: (v) => (longa ? mesAno(Number(v)) : curta(Number(v))) },
               grid: { color: 'rgba(27,27,47,0.12)' },
             },
             y: {
