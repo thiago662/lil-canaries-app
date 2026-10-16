@@ -23,13 +23,14 @@ import { diasAte, seriePlanejada, statusMeta } from '../core/metas';
 import { MetasService } from '../core/metas.service';
 import { Ninho } from '../core/ninho';
 import { serieCanarinho } from '../core/placar';
+import { Badges } from '../shared/badges';
 import { Grafico, Serie } from '../shared/grafico';
 import { Checkpoints } from './checkpoints';
 
 // Ficha de um canarinho: figurinha com os valores de hoje, gráfico e checkpoints.
 // A própria ficha é editável; a dos outros é só leitura.
 @Component({
-  imports: [FormsModule, RouterLink, Checkpoints, Grafico],
+  imports: [FormsModule, RouterLink, Checkpoints, Grafico, Badges],
   template: `
     @if (perfil(); as p) {
       <section class="card figurinha">
@@ -39,6 +40,9 @@ import { Checkpoints } from './checkpoints';
             <h1>{{ p.nome }}</h1>
             @if (p.apelido) {
               <p class="apelido">"{{ p.apelido }}"</p>
+            }
+            @if (badges().length) {
+              <app-badges class="badges" [badges]="badges()" />
             }
           </div>
           @if (editavel()) {
@@ -162,6 +166,7 @@ import { Checkpoints } from './checkpoints';
     .cabeca > div { flex: 1; min-width: 8rem; }
     .cabeca h1 { margin: 0; }
     .apelido { margin: 0; font-weight: 800; }
+    .badges { margin-top: 0.4rem; }
     .avatar { font-size: 3.5rem; line-height: 1; background: var(--branco); border: 3px solid var(--tinta); border-radius: 50%; width: 5rem; height: 5rem; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--tinta); }
     .mini { font-size: 1rem; padding: 0.2rem 0.7rem; text-decoration: none; display: inline-block; }
     .perfil { margin-top: 1rem; padding: 1rem; background: var(--papel); border: 3px dashed var(--tinta); border-radius: 0.75rem; }
@@ -204,6 +209,7 @@ export class Ficha {
   );
   protected readonly editavel = computed(() => this.uid() === this.auth.usuario()?.uid);
   protected readonly medidas = computed(() => this.ninho.medidasPorUid().get(this.uid()) ?? []);
+  protected readonly badges = computed(() => this.ninho.badgesPorUid().get(this.uid()) ?? []);
 
   protected readonly erro = signal('');
   protected readonly editandoPerfil = signal(false);

@@ -3,6 +3,7 @@ import { collection, collectionGroup, onSnapshot } from 'firebase/firestore';
 import { AuthService, Perfil } from './auth.service';
 import { db } from './firebase';
 import { Apelido } from './apelidos';
+import { Badge, calcularBadges } from './badges';
 import { Medida } from './medidas';
 import { Meta, MetaDe } from './metas';
 
@@ -34,6 +35,11 @@ export class Ninho {
     for (const lista of mapa.values()) lista.sort((a, b) => (a.data < b.data ? 1 : -1));
     return mapa;
   });
+
+  /** Os títulos de cada canarinho, recalculados a cada mudança nos dados. */
+  readonly badgesPorUid = computed<Map<string, Badge[]>>(() =>
+    calcularBadges(this.canarinhos(), this.medidasPorUid(), this.apelidos(), this.metas()),
+  );
 
   constructor() {
     const logado = computed(() => this.auth.perfil() !== null);

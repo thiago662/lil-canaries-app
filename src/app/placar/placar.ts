@@ -8,12 +8,13 @@ import {
 } from '../core/medidas';
 import { Ninho } from '../core/ninho';
 import { ranking, serieCanarinho } from '../core/placar';
+import { Badges } from '../shared/badges';
 import { Grafico, PALETA, Serie } from '../shared/grafico';
 
 const MEDALHAS = ['🥇', '🥈', '🥉'];
 
 @Component({
-  imports: [RouterLink, Grafico],
+  imports: [RouterLink, Grafico, Badges],
   template: `
     <section class="card">
       <h1>Placar</h1>
@@ -60,6 +61,7 @@ const MEDALHAS = ['🥇', '🥈', '🥉'];
                   <span class="pos">{{ medalhas[i] ?? i + 1 }}</span>
                   <span class="nome">
                     {{ l.canarinho.perfil.avatar }} {{ l.canarinho.perfil.nome }}
+                    <app-badges [badges]="badgesDe(l.canarinho.uid)" [compacto]="true" />
                     @if (l.canarinho.perfil.apelido) {
                       <small>"{{ l.canarinho.perfil.apelido }}"</small>
                     }
@@ -117,7 +119,7 @@ const MEDALHAS = ['🥇', '🥈', '🥉'];
     .pos { font-family: var(--fonte-titulo); font-size: 1.4rem; text-align: center; }
     .nome small { display: block; opacity: 0.65; }
     .tabela strong { text-align: right; }
-    .var { grid-column: 3; text-align: right; font-size: 0.85rem; opacity: 0.8; }
+    .var { grid-column: 2 / -1; text-align: right; font-size: 0.85rem; opacity: 0.8; }
     .var.sobe { color: var(--laranja); }
     .var.desce { color: var(--azul); }
     .sem { margin: 1rem 0 0; font-weight: 700; }
@@ -161,6 +163,10 @@ export class Placar {
 
   // seta, pra passar como `formato` do gráfico mantendo o `this`
   protected readonly fmt = (v: number) => formatarCategoria(this.cat(), v);
+
+  protected badgesDe(uid: string) {
+    return this.ninho.badgesPorUid().get(uid) ?? [];
+  }
 
   protected variacao(v: number | undefined) {
     if (v === undefined) return 'primeiro checkpoint';
