@@ -73,7 +73,14 @@ const post = (corpo) => ({
 // "Bearer owner" ignora as rules no emulador (as rules negam criar perfil pelo cliente).
 async function gravar(caminho, campos) {
   const fields = Object.fromEntries(
-    Object.entries(campos).map(([k, v]) => [k, typeof v === 'number' ? { doubleValue: v } : { stringValue: v }]),
+    Object.entries(campos).map(([k, v]) => [
+      k,
+      v instanceof Date
+        ? { timestampValue: v.toISOString() }
+        : typeof v === 'number'
+          ? { doubleValue: v }
+          : { stringValue: v },
+    ]),
   );
   const r = await fetch(`${DOCS}/${caminho}`, {
     method: 'PATCH',
@@ -101,3 +108,15 @@ for (const [texto, data, autor] of apelidos) {
   await gravar(`apelidos/${normalizar(texto)}`, { texto, data, autorUid: uids[autor] });
 }
 console.log(`${apelidos.length} apelidos com M lançados`);
+
+// Recados na ficha do Thiago (autor: índice em `usuarios`), de minutos a dias atrás.
+const recados = [
+  ['tá sumido da academia, hein', 1, 3 * 24 * 60],
+  ['e esse peso aí? parece que desceu de elevador', 2, 90],
+  ['respeita o canarinho pistola', 0, 4],
+];
+for (const [i, [texto, autor, minAtras]] of recados.entries()) {
+  const criadoEm = new Date(Date.now() - minAtras * 60_000);
+  await gravar(`canarinhos/${uids[0]}/comentarios/seed${i}`, { texto, autorUid: uids[autor], criadoEm });
+}
+console.log(`${recados.length} recados na ficha do Thiago`);

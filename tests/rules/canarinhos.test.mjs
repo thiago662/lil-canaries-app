@@ -13,8 +13,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
   updateDoc,
+  addDoc,
 } from 'firebase/firestore';
 
 const perfil = { nome: 'Thiago', apelido: '', avatar: '🐤' };
@@ -217,5 +219,53 @@ describe('metas', () => {
     await assertFails(setDoc(ref('thiago', 'peso'), meta({ extra: 1 })));
     await assertFails(setDoc(ref('thiago', 'peso'), { tipo: 'peso' }));
     await assertFails(setDoc(ref('thiago', 'imc'), { tipo: 'imc', valor: 25 })); // categoria derivada
+  });
+});
+
+describe('comentários', () => {
+  const novo = (uid, extra = {}) => ({ texto: 'tá magro, hein', autorUid: uid, criadoEm: serverTimestamp(), ...extra });
+  const col = (uid, alvo = 'thiago') => collection(como(uid), `canarinhos/${alvo}/comentarios`);
+  const semear = (id, autorUid = 'igor') =>
+    env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), `canarinhos/thiago/comentarios/${id}`), { texto: 'oi', autorUid, criadoEm: new Date() }),
+    );
+
+  it('canarinho comenta na ficha de outro e na própria; todo canarinho lê', async () => {
+    await assertSucceeds(addDoc(col('igor'), novo('igor'))); // na ficha do Thiago
+    await assertSucceeds(addDoc(col('thiago'), novo('thiago'))); // na própria
+    const snap = await assertSucceeds(getDocs(col('igor')));
+    assert.equal(snap.size, 2);
+  });
+
+  it('sem perfil não lê nem comenta', async () => {
+    await assertFails(addDoc(col('intruso'), novo('intruso')));
+    await semear('c1');
+    await assertFails(getDocs(col('intruso')));
+  });
+
+  it('não dá pra assinar por outro nem inventar a data', async () => {
+    await assertFails(addDoc(col('igor'), novo('thiago'))); // autor falso
+    await assertFails(addDoc(col('igor'), novo('igor', { criadoEm: new Date('2020-01-01') })));
+  });
+
+  it('texto: 1 a 200 caracteres, sem campo extra nem faltando', async () => {
+    await assertFails(addDoc(col('igor'), novo('igor', { texto: '' })));
+    await assertFails(addDoc(col('igor'), novo('igor', { texto: 'x'.repeat(201) })));
+    await assertSucceeds(addDoc(col('igor'), novo('igor', { texto: 'x'.repeat(200) })));
+    await assertFails(addDoc(col('igor'), novo('igor', { texto: 123 })));
+    await assertFails(addDoc(col('igor'), novo('igor', { extra: 1 })));
+    await assertFails(addDoc(col('igor'), { texto: 'oi', autorUid: 'igor' })); // sem data
+  });
+
+  it('não existe edição', async () => {
+    await semear('c1', 'igor');
+    await assertFails(updateDoc(doc(como('igor'), 'canarinhos/thiago/comentarios/c1'), { texto: 'editado' }));
+    await assertFails(updateDoc(doc(como('thiago'), 'canarinhos/thiago/comentarios/c1'), { texto: 'editado' }));
+  });
+
+  it('só o autor apaga; nem o dono da ficha apaga o recado dos outros', async () => {
+    await semear('c1', 'igor');
+    await assertFails(deleteDoc(doc(como('thiago'), 'canarinhos/thiago/comentarios/c1')));
+    await assertSucceeds(deleteDoc(doc(como('igor'), 'canarinhos/thiago/comentarios/c1')));
   });
 });

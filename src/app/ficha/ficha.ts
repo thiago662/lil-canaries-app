@@ -26,11 +26,12 @@ import { serieCanarinho } from '../core/placar';
 import { Badges } from '../shared/badges';
 import { Grafico, Serie } from '../shared/grafico';
 import { Checkpoints } from './checkpoints';
+import { Comentarios } from './comentarios';
 
 // Ficha de um canarinho: figurinha com os valores de hoje, gráfico e checkpoints.
 // A própria ficha é editável; a dos outros é só leitura.
 @Component({
-  imports: [FormsModule, RouterLink, Checkpoints, Grafico, Badges],
+  imports: [FormsModule, RouterLink, Checkpoints, Comentarios, Grafico, Badges],
   template: `
     @if (perfil(); as p) {
       <section class="card figurinha">
@@ -146,6 +147,8 @@ import { Checkpoints } from './checkpoints';
           }
         }
       </section>
+
+      <app-comentarios [uid]="uid()" [nome]="p.nome" [proprio]="editavel()" />
 
       <app-checkpoints [uid]="uid()" [medidas]="medidas()" [editavel]="editavel()" />
     } @else if (ninho.pronto()) {
