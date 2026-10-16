@@ -48,6 +48,7 @@ import { Comentarios } from './comentarios';
           </div>
           @if (editavel()) {
             <button class="btn mini" (click)="abrirPerfil()">✏️ Perfil</button>
+            <a class="btn mini" routerLink="/senha">🔑 Senha</a>
           } @else {
             <a class="btn mini" routerLink="/">🏆 Placar</a>
           }

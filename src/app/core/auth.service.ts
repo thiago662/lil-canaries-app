@@ -1,5 +1,13 @@
 import { Injectable, signal } from '@angular/core';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import {
+  EmailAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  signOut,
+  updatePassword,
+  User,
+} from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -41,6 +49,14 @@ export class AuthService {
 
   logout() {
     return signOut(auth);
+  }
+
+  /** Confirma a senha atual (o Firebase exige login recente pra isso) e troca pela nova. */
+  async trocarSenha(atual: string, nova: string) {
+    const u = auth.currentUser;
+    if (!u?.email) throw new Error('sem usuário logado');
+    await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, atual));
+    await updatePassword(u, nova);
   }
 
   async salvarPerfil(perfil: Perfil) {

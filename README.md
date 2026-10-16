@@ -26,6 +26,8 @@ Só entra quem tem perfil no Firestore, e o cliente nunca cria perfil (as rules 
 
 Quem tem conta no Auth mas não tem esse documento vê "Essa conta ainda não foi convidada pro ninho".
 
+Cada canarinho troca a própria senha no app, em **Minha ficha > 🔑 Senha** (pede a senha atual e a nova, com no mínimo 8 caracteres). Quem esqueceu a senha tem que pedir pro dono do projeto redefinir no Console (Authentication > três pontinhos do usuário).
+
 ## Comandos
 
 - `npm start`: dev server
